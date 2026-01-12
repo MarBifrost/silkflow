@@ -88,7 +88,7 @@ a {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  color: #1e1e1e;
+  color: #ffffff;
   margin-top: 0px;
   margin-bottom: 0px;
   font-weight: 700;
@@ -397,8 +397,8 @@ Header Style
   padding-left: 20px;
   padding-right: 20px;
   border-radius: 20px;
-  font-weight: 300;
-  font-size: 14px;
+  font-weight: 500;
+  font-size: 30px;
   height: 40px;
   line-height: 40px;
   text-transform: capitalize;
