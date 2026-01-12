@@ -1,32 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 
-  <head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link href="/assets/webfonts/fa-regular-400.woff2" rel="stylesheet">
 
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <title>Login</title>
 
-    <title>SilkFlow</title>
+  <!-- Bootstrap core CSS -->
+  <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Bootstrap core CSS -->
-    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Additional CSS Files -->
+  <link rel="stylesheet" href="assets/css/fontawesome.css">
+  <link rel="stylesheet" href="assets/css/templatemo-scholar.css">
+  <link rel="stylesheet" href="assets/css/owl.css">
+  <link rel="stylesheet" href="assets/css/animate.css">
+  <link rel="stylesheet" href="https://unpkg.com/swiper@7/swiper-bundle.min.css"/>
 
-
-    <!-- Additional CSS Files -->
-    <link rel="stylesheet" href="assets/css/fontawesome.css">
-    <link rel="stylesheet" href="assets/css/templatemo-scholar.css">
-    <link rel="stylesheet" href="assets/css/owl.css">
-    <link rel="stylesheet" href="assets/css/animate.css">
-    <link rel="stylesheet"href="https://unpkg.com/swiper@7/swiper-bundle.min.css"/>
-<!--
-
-TemplateMo 586 Scholar
-
-https://templatemo.com/tm-586-scholar
-
--->
-  </head>
+</head>
 
 <body>
 
@@ -46,8 +38,8 @@ https://templatemo.com/tm-586-scholar
   <!-- ***** Header Area Start ***** -->
   <header class="header-area header-sticky">
     <div class="container">
-        <div class="row">
-            <div class="col-12">
+      <div class="row">
+        <div class="col-12">
                 <nav class="main-nav">
                     <!-- ***** Logo Start ***** -->
                     <a href="index.html" class="logo">
@@ -65,7 +57,7 @@ https://templatemo.com/tm-586-scholar
                     <!-- ***** Menu Start ***** -->
                     <ul class="nav">
                       <li class="scroll-to-section"><a href="class.html">საკლასო ოთახი</a></li>
-                      <li class="scroll-to-section"><a href="index.html">გასვლა</a></li>
+                      <li class="scroll-to-section"><a href="login.html">გასვლა</a></li>
                   </ul>   
                     <a class='menu-trigger'>
                         <span>Menu</span>
@@ -73,99 +65,69 @@ https://templatemo.com/tm-586-scholar
                     <!-- ***** Menu End ***** -->
                 </nav>
             </div>
-        </div>
+      </div>
     </div>
-  </header>
+  </header>8
   <!-- ***** Header Area End ***** -->
 
-  <div class="main-banner" id="top">
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-10 offset-lg-1">
-        <div class="header-text text-center">
-          <h2 style="margin-bottom: 30px;">მიმდინარე კვირის ცვლა</h2>
-          
-          <div class="search-filter mb-4" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-            <form id="schedule-search" class="row g-3 justify-content-center">
-              <div class="col-auto">
-                <label for="startDate" class="text-white me-2">აირჩიეთ თარიღი:</label>
-                <input type="date" id="startDate" class="form-control" style="display: inline-block; width: auto;">
-              </div>
-              <div class="col-auto">
-                <button type="button" onclick="updateSchedule()" class="btn btn-primary" style="background-color: #7a6ad8; border: none; padding: 8px 25px; border-radius: 25px;">ჩვენება</button>
-              </div>
-            </form>
-          </div>
+  <div class="main-banner" id="top col-lg-12">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12">
 
-          <div class="table-responsive" style="background: white; border-radius: 20px; padding: 20px; box-shadow: 0px 10px 30px rgba(0,0,0,0.1);">
-            <table class="table table-hover">
-              <thead>
-                <tr id="table-head" style="color: #7a6ad8;">
-                  </tr>
-              </thead>
-              <tbody id="table-body">
-                </tbody>
-            </table>
+          <div class="schedule-container">
+            <div class="schedule-box animate__animated animate__fadeInUp">
+
+              <div class="container">
+                <div class="row">
+                    <div class="col-lg-10 offset-lg-1">
+                    <div class="header-text text-center">
+                    <h2>მიმდინარე კვირის ცვლა</h2>
+          
+                    <div class="search-filter mb-4" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
+                        <form id="schedule-search" class="row g-3 justify-content-center">
+                        <div class="col-auto">
+                            <label for="startDate" class="text-white me-2">აირჩიეთ თარიღი:</label>
+                            <input type="date" id="startDate" class="form-control" style="display: inline-block; width: auto;">
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" onclick="updateSchedule()" class="btn btn-primary" style="background-color: #7a6ad8; border: none; padding: 8px 25px; border-radius: 25px;">ჩვენება</button>
+                        </div>
+                        </form>
+                    </div>
+
+                    <div class="table-responsive" style="background: white; border-radius: 20px; padding: 20px; box-shadow: 0px 10px 30px rgba(0,0,0,0.1);">
+                        <table class="table table-hover">
+                        <thead>
+                            <tr id="table-head" style="color: #7a6ad8;">
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            </tbody>
+                        </table>
+                    </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+            </div>
           </div>
 
         </div>
       </div>
     </div>
   </div>
-</div>
+
   <!-- Scripts -->
-  <!-- Bootstrap core JavaScript -->
   <script src="vendor/jquery/jquery.min.js"></script>
   <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
   <script src="assets/js/isotope.min.js"></script>
   <script src="assets/js/owl-carousel.js"></script>
   <script src="assets/js/counter.js"></script>
   <script src="assets/js/custom.js"></script>
-  <script>
-const staff = ["ბექა", "ზურა", "საბა", "გიორგი", "მარიამ"];
 
-function updateSchedule() {
-    const dateInput = document.getElementById('startDate').value;
-    let startDate = dateInput ? new Date(dateInput) : new Date();
-    
-    const headRow = document.getElementById('table-head');
-    const bodyRow = document.getElementById('table-body');
-    
-    headRow.innerHTML = '';
-    bodyRow.innerHTML = '<tr></tr>';
-    const tr = bodyRow.querySelector('tr');
-
-    // Generate 6 days (excluding Sunday)
-    let daysCounted = 0;
-    let tempDate = new Date(startDate);
-
-    while (daysCounted < 6) {
-        // 0 is Sunday
-        if (tempDate.getDay() !== 0) {
-            const dayName = tempDate.toLocaleDateString('ka-GE', { weekday: 'long' });
-            const dateString = tempDate.toLocaleDateString('ka-GE', { month: 'short', day: 'numeric' });
-
-            // Add Header
-            const th = document.createElement('th');
-            th.innerHTML = `${dayName}<br><small>${dateString}</small>`;
-            headRow.appendChild(th);
-
-            // Add Mock Data (In future, this is where your MySQL data goes)
-            const td = document.createElement('td');
-            // Logic: Assigning a random person for the mock-up
-            const person = staff[daysCounted % staff.length];
-            td.innerHTML = `<span class="badge" style="background-color: #7a6ad8; font-size: 0.9rem; padding: 8px 15px;">${person}</span>`;
-            tr.appendChild(td);
-
-            daysCounted++;
-        }
-        tempDate.setDate(tempDate.getDate() + 1);
-    }
-}
-
-// Initialize on load
-window.onload = updateSchedule;
-</script>
-
-  </body>
+</body>
 </html>
+
