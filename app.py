@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, session, redirect, url_for
 from flask_mysqldb import MySQL
 from auth import auth_bp # Import the blueprint
 
@@ -18,8 +18,9 @@ app.register_blueprint(auth_bp)
 
 @app.route('/')
 def index():
-    # You can add logic here to check if user is logged in
-    return render_template('login.html')
+    if 'loggedin' in session:
+        return render_template('main.html', email=session['email'])
+    return redirect(url_for('auth.login'))
 
 if __name__ == '__main__':
     app.run(debug=True)
