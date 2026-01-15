@@ -1,9 +1,11 @@
-from flask import Flask, render_template, session, redirect, url_for, request, jsonify
+from flask import Flask, render_template, session, redirect, url_for, request
+from flask_admin import Admin
 from flask_mysqldb import MySQL
 import MySQLdb.cursors
 from auth import auth_bp
 from datetime import datetime, timedelta
 import pytz
+
 
 app = Flask(__name__)
 app.secret_key = 'mariam123'
@@ -14,6 +16,7 @@ app.config['MYSQL_PASSWORD'] = 'qwe123'
 app.config['MYSQL_DB'] = 'silkflow_users'
 
 mysql = MySQL(app)
+admin = Admin(app, name='My Admin Panel')
 
 app.register_blueprint(auth_bp)
 
@@ -80,7 +83,7 @@ def main():
             LEFT JOIN employees e ON s.employee_id = e.id 
             WHERE s.shift_date >= %s 
             ORDER BY s.shift_date 
-            LIMIT 7
+            LIMIT 14
         """
         cursor.execute(query, (start_date,))
 

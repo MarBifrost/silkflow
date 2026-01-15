@@ -38,14 +38,14 @@
             <a href="{{ url_for('main') }}" class="logo">
               <h1>SilkFlow</h1>
             </a>
-            <div class="search-input">
-              <form id="search" action="{{ url_for('main') }}" method="GET">
-                <input type="text" placeholder="ძებნა სახელით..." id='searchText' name="searchKeyword" />
-                <i class="fa fa-search"></i>
-              </form>
-            </div>
+{#            <div class="search-input">#}
+{#              <form id="search" action="{{ url_for('main') }}" method="GET">#}
+{#                <input type="text" placeholder="ძებნა სახელით..." id='searchText' name="searchKeyword" />#}
+{#                <i class="fa fa-search"></i>#}
+{#              </form>#}
+{#            </div>#}
             <ul class="nav">
-              <li class="scroll-to-section"><a href="{{ url_for('my_class') }}">საკლასო ოთახი</a></li>
+              <li class="scroll-to-section"><a href="{{ url_for('main') }}">გრაფიკი</a></li>
               <li class="scroll-to-section"><a href="{{ url_for('auth.logout') }}">გასვლა</a></li>
             </ul>
             <a class='menu-trigger'>
@@ -71,8 +71,11 @@
                       <p><strong><i class="fa fa-user"></i> მენტორი:</strong> {{ c.mentor_name }}</p>
                       <p><strong><i class="fa fa-calendar"></i> პერიოდი:</strong> {{ c.start_date }} -დან {{ c.end_date }}-მდე</p>
                       <p><strong><i class="fa fa-clock"></i> დღეები:</strong> {{ c.days_of_week }}</p>
-                      <p><strong><i class="fa fa-hourglass-half"></i> დრო & ხანგრძლივობა:</strong> {{ c.class_time }} {{ c.duration }}</p>
+                      <p><strong><i class="fa fa-hourglass-half"></i> დრო :</strong> {{ c.class_time }} </p>
+                      <p><strong><i class="fa fa-hourglass-half"></i> ხანგრძლივობა:</strong> {{ c.duration }}</p>
                     </div>
+                  </div>
+                </div>
               {% endfor %}
           {% else %}
             <h2>კურსები არ გაქვთ დამატებული</h2>
