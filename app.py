@@ -24,19 +24,25 @@ def index():
     return redirect(url_for('auth.login'))
 
 @app.route('/main')
-def main_page():
-    if request.method == "GET":
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+def main():
+    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
 
-        query = 'SELECT shifts.shift_date, employees.name FROM shifts join employees on shifts.employee_id = employee.id;'
-        cursor.execute(query)
-        shifts = cursor.fetchall()
-        cursor.close()
+    query = """SELECT s.shift_date, DAYNAME(s.shift_date) as day_name, e.name as employee_name from shifts s left join employees e on s.employee_id = e.id order by s.shift_date limit 14;"""
+    cursor.execute(query)
+    shifts = cursor.fetchall()
+    cursor.close()
 
-        for shift in shifts:
-            if shift['shift_date']:
-                shift['shift_date'] = shift['shift_date'].strftime('%Y-%m-%d')
+    for shift in shifts:
+        if shift['shift_date']:
+            shift['shift_date'] = shift['shift_date'].strftime('%Y-%m-%d')
+    return render_template('main.html', shifts=shifts)
 
-        return jsonify(shifts)
+@app.route('/class')
+def my_class():
+    if 'loggedin' in session:
+        return render_template('class.html', email=session['email'])
+    return redirect(url_for('auth.login'))
+
+
 if __name__ == '__main__':
     app.run(debug=True)
