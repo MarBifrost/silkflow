@@ -1,36 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 
-  <head>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link href="/assets/webfonts/fa-regular-400.woff2" rel="stylesheet">
 
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <title>SilkFlow - Schedule</title>
 
-    <title>SilkFlow</title>
+  <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Bootstrap core CSS -->
-    <link href="vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-
-
-    <!-- Additional CSS Files -->
-    <link rel="stylesheet" href="assets/css/fontawesome.css">
-    <link rel="stylesheet" href="assets/css/templatemo-scholar.css">
-    <link rel="stylesheet" href="assets/css/owl.css">
-    <link rel="stylesheet" href="assets/css/animate.css">
-    <link rel="stylesheet"href="https://unpkg.com/swiper@7/swiper-bundle.min.css"/>
-<!--
-
-TemplateMo 586 Scholar
-
-https://templatemo.com/tm-586-scholar
-
--->
-  </head>
+  <link rel="stylesheet" href="/static/assets/css/fontawesome.css">
+  <link rel="stylesheet" href="/static/assets/css/templatemo-scholar.css">
+  <link rel="stylesheet" href="/static/assets/css/owl.css">
+  <link rel="stylesheet" href="/static/assets/css/animate.css">
+  <link rel="stylesheet" href="https://unpkg.com/swiper@7/swiper-bundle.min.css" />
+</head>
 
 <body>
 
-  <!-- ***** Preloader Start ***** -->
   <div id="js-preloader" class="js-preloader">
     <div class="preloader-inner">
       <span class="dot"></span>
@@ -41,71 +29,62 @@ https://templatemo.com/tm-586-scholar
       </div>
     </div>
   </div>
-  <!-- ***** Preloader End ***** -->
 
-  <!-- ***** Header Area Start ***** -->
   <header class="header-area header-sticky">
     <div class="container">
-        <div class="row">
-            <div class="col-12">
-                <nav class="main-nav">
-                    <!-- ***** Logo Start ***** -->
-                    <a href="index.html" class="logo">
-                        <h1>SilkFlow</h1>
-                    </a>
-                    <ul class="nav">
-                      <li class="scroll-to-section"><a href="{{ url_for('main') }}">გრაფიკი</a></li>
-                      <li class="scroll-to-section"><a href="{{ url_for('auth.logout') }}">გასვლა</a></li>
-                  </ul>   
-                    <a class='menu-trigger'>
-                        <span>Menu</span>
-                    </a>
-                    <!-- ***** Menu End ***** -->
-                </nav>
+      <div class="row">
+        <div class="col-12">
+          <nav class="main-nav">
+            <a href="{{ url_for('main') }}" class="logo">
+              <h1>SilkFlow</h1>
+            </a>
+            <div class="search-input">
+              <form id="search" action="{{ url_for('main') }}" method="GET">
+                <input type="text" placeholder="ძებნა სახელით..." id='searchText' name="searchKeyword" />
+                <i class="fa fa-search"></i>
+              </form>
             </div>
+            <ul class="nav">
+              <li class="scroll-to-section"><a href="{{ url_for('my_class') }}">საკლასო ოთახი</a></li>
+              <li class="scroll-to-section"><a href="{{ url_for('auth.logout') }}">გასვლა</a></li>
+            </ul>
+            <a class='menu-trigger'>
+              <span>Menu</span>
+            </a>
+          </nav>
         </div>
+      </div>
     </div>
   </header>
-  <!-- ***** Header Area End ***** -->
 
   <div class="main-banner" id="top">
-    <div class="container">
-      <div class="row">
-        <div class="col-lg-12">
-          <div class="owl-carousel owl-banner">
-            <div class="item item-1">
-            </div>
-            <div class="item item-2">
-            </div>
-            <div class="item item-3">
-              <div class="header-text">
-                <span class="category">Online Learning</span>
-                <h2>Online Learning helps you save the time</h2>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod temporious incididunt ut labore et dolore magna aliqua suspendisse.</p>
-                <div class="buttons">
-                  <div class="main-button">
-                    <a href="#">Request Demo</a>
-                  </div>
-                  <div class="icon-button">
-                    <a href="#"><i class="fa fa-play"></i> What's Online Course?</a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 offset-lg-2">
+        <div class="header-text text-center animate__animated animate__fadeIn">
+          {% if course %}
+              {% for c in course %}
+                <div class="course-info-card" style="background: white; padding: 40px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); color: #333;">
+                  <div class="row text-start">
+                    <div class="col-md-6 mb-3">
+                      <p><strong><i class="fa fa-user"></i> კურსის დასახელება:</strong> {{ c.course_name }}</p>
+                      <p><strong><i class="fa fa-user"></i> მენტორი:</strong> {{ c.mentor_name }}</p>
+                      <p><strong><i class="fa fa-calendar"></i> პერიოდი:</strong> {{ c.start_date }} -დან {{ c.end_date }}-მდე</p>
+                      <p><strong><i class="fa fa-clock"></i> დღეები:</strong> {{ c.days_of_week }}</p>
+                      <p><strong><i class="fa fa-hourglass-half"></i> დრო & ხანგრძლივობა:</strong> {{ c.class_time }} {{ c.duration }}</p>
+                    </div>
+              {% endfor %}
+          {% else %}
+            <h2>კურსები არ გაქვთ დამატებული</h2>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
+</div>
+  <script src="/static/vendor/jquery/jquery.min.js"></script>
+  <script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
+  <script src="/static/assets/js/custom.js"></script>
 
-  <!-- Scripts -->
-  <!-- Bootstrap core JavaScript -->
-  <script src="vendor/jquery/jquery.min.js"></script>
-  <script src="vendor/bootstrap/js/bootstrap.min.js"></script>
-  <script src="assets/js/isotope.min.js"></script>
-  <script src="assets/js/owl-carousel.js"></script>
-  <script src="assets/js/counter.js"></script>
-  <script src="assets/js/custom.js"></script>
-
-  </body>
+</body>
 </html>

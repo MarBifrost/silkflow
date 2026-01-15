@@ -39,8 +39,8 @@
               <h1>SilkFlow</h1>
             </a>
             <div class="search-input">
-              <form id="search" action="#">
-                <input type="text" placeholder="ძებნა" id='searchText' name="searchKeyword" />
+              <form id="search" action="{{ url_for('main') }}" method="GET">
+                <input type="text" placeholder="ძებნა სახელით..." id='searchText' name="searchKeyword" />
                 <i class="fa fa-search"></i>
               </form>
             </div>
