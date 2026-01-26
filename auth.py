@@ -1,31 +1,42 @@
+# auth.py – cleaned up version
+
 from flask import Blueprint, request, render_template, redirect, url_for, session
-import MySQLdb.cursors
+from database import get_db
 
 auth_bp = Blueprint('auth', __name__)
-
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     msg = ''
-    if request.method == "POST":
-        email = request.form.get('email')
-        password = request.form.get('password')
+    if request.method == 'POST':
+        email    = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
 
-        from app import mysql
+        if not email or not password:
+            msg = 'შეიყვანეთ ელ.ფოსტა და პაროლი'
+            return render_template('login.html', msg=msg)
 
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        try:
+            db = get_db()
+            cursor = db.cursor()
 
-        # Check if account exists in MySQL
-        cursor.execute('SELECT * FROM users WHERE email = %s AND password = %s', (email, password))
-        account = cursor.fetchone()
+            cursor.execute(
+                'SELECT * FROM users WHERE email = %s AND password = %s',
+                (email, password)
+            )
+            account = cursor.fetchone()
 
-        if account:
-            session['loggedin'] = True
-            session['id'] = account['id']
-            session['email'] = account['email']
-            return redirect(url_for('index'))
-        else:
-            msg = 'არასწორი იუზერი, ან პაროლი'
+            if account:
+                session['loggedin'] = True
+                session['id']       = account['id']
+                session['email']    = account['email']
+                return redirect(url_for('index'))   # or 'main.index' etc.
+            else:
+                msg = 'არასწორი ელ.ფოსტა ან პაროლი'
+
+        except Exception as e:   # better to catch DB errors
+            print(f"Database error during login: {e}")
+            msg = 'მოხდა შეცდომა. სცადეთ მოგვიანებით'
 
     return render_template('login.html', msg=msg)
 
@@ -34,4 +45,3 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for('auth.login'))
-

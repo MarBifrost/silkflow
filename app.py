@@ -1,8 +1,8 @@
-from flask import Flask, render_template, session, redirect, url_for, request
-from flask_admin import Admin
-from flask_mysqldb import MySQL
+from flask import Flask, render_template, session, redirect, url_for, request, flash
+from database import init_db, get_db
 import MySQLdb.cursors
 from auth import auth_bp
+from vacations import vacations_bp
 from datetime import datetime, timedelta
 import pytz
 
@@ -15,10 +15,11 @@ app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'qwe123'
 app.config['MYSQL_DB'] = 'silkflow_users'
 
-mysql = MySQL(app)
-admin = Admin(app, name='My Admin Panel')
+init_db(app)
+
 
 app.register_blueprint(auth_bp)
+app.register_blueprint(vacations_bp)
 
 
 @app.route('/')
@@ -27,74 +28,76 @@ def index():
         return redirect(url_for('main'))
     return redirect(url_for('auth.login'))
 
+
+
+
+
 @app.route('/class')
 def my_class():
+    db = get_db()
+    cursor = db.cursor()
     if 'loggedin' not in session:
         return redirect(url_for('auth.login'))
 
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-    course_name = request.args.get('course_name')
-    mentor_name = request.args.get('mentor_name')
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    days_of_week = request.args.get('days_of_week')
-    duration = request.args.get('duration')
+    try:
+        query = 'SELECT * FROM courses LIMIT 2'
+        cursor.execute(query)
+        course_list = cursor.fetchall()
 
+        return render_template('class.html', course=course_list)
 
-    query = 'SELECT * FROM courses limit 2'
-    cursor.execute(query)
-    course = cursor.fetchall()
-    cursor.close()
-
-    return render_template('class.html', course=course, course_name = course_name, mentor_name=mentor_name,start_date=start_date,end_date=end_date,days_of_week=days_of_week,duration=duration)
-
+    except Exception as e:
+        flash(f"Error loading classes: {str(e)}", "danger")
+        return redirect(url_for('main'))
 
 
 @app.route('/main')
 def main():
+    db = get_db()
+    cursor = db.cursor()
     if 'loggedin' not in session:
         return redirect(url_for('auth.login'))
 
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    try:
+        tbilisi_tz = pytz.timezone('Asia/Tbilisi')
+        today = datetime.now(tbilisi_tz).date()
 
-    tbilisi_tz = pytz.timezone('Asia/Tbilisi')
-    today = datetime.now(tbilisi_tz).date()
-
-    search_keyword = request.args.get('searchKeyword')
-    chosen_date = request.args.get('filter_date')
-
-    start_date = chosen_date if chosen_date else today
-
-    if search_keyword:
-        limit_date = today + timedelta(days=30)
-        query = """
-            SELECT s.shift_date, DAYNAME(s.shift_date) as day_name, e.name as employee_name 
-            FROM shifts s 
-            LEFT JOIN employees e ON s.employee_id = e.id 
-            WHERE e.name LIKE %s AND s.shift_date BETWEEN %s AND %s
-            ORDER BY s.shift_date
-        """
-        cursor.execute(query, (f"%{search_keyword}%", today, limit_date))
-    else:
+        search_keyword = request.args.get('searchKeyword')
+        chosen_date = request.args.get('filter_date')
         start_date = chosen_date if chosen_date else today
-        query = """
-            SELECT s.shift_date, DAYNAME(s.shift_date) as day_name, e.name as employee_name 
-            FROM shifts s 
-            LEFT JOIN employees e ON s.employee_id = e.id 
-            WHERE s.shift_date >= %s 
-            ORDER BY s.shift_date 
-            LIMIT 14
-        """
-        cursor.execute(query, (start_date,))
 
-    shifts = cursor.fetchall()
-    cursor.close()
+        if search_keyword:
+            limit_date = today + timedelta(days=30)
+            query = """
+                SELECT s.shift_date, DAYNAME(s.shift_date) as day_name, e.name as employee_name
+                FROM shifts s
+                LEFT JOIN employees e ON s.employee_id = e.id
+                WHERE e.name LIKE %s AND s.shift_date BETWEEN %s AND %s
+                ORDER BY s.shift_date
+            """
+            cursor.execute(query, (f"%{search_keyword}%", today, limit_date))
+        else:
+            query = """
+                SELECT s.shift_date, DAYNAME(s.shift_date) as day_name, e.name as employee_name
+                FROM shifts s
+                LEFT JOIN employees e ON s.employee_id = e.id
+                WHERE s.shift_date >= %s
+                ORDER BY s.shift_date
+                LIMIT 14
+            """
+            cursor.execute(query, (start_date,))
 
-    for shift in shifts:
-        if shift['shift_date']:
-            shift['shift_date'] = shift['shift_date'].strftime('%Y-%m-%d')
+        shifts = cursor.fetchall()
 
-    return render_template('main.html', shifts=shifts, email=session.get('email'))
+        for shift in shifts:
+            if shift['shift_date']:
+                shift['shift_date'] = shift['shift_date'].strftime('%Y-%m-%d')
+
+        return render_template('main.html', shifts=shifts, email=session.get('email'))
+
+    except Exception as e:
+        flash(f"Error loading schedule: {str(e)}", "danger")
+        return render_template('main.html', shifts=[], email=session.get('email'))
 
 
 
@@ -102,3 +105,10 @@ def main():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+
+
+
+
