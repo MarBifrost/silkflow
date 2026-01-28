@@ -64,24 +64,16 @@
                     <div class="col-md-6 mb-3" >
                         <h3 style="color: #323539; font-size: 20px; font-weight: 500; margin-bottom: 15px;">ახალი შვებულების დამატება</h3>
                         <form action="/add_vacation" method="POST" style="display: flex; flex-direction: column; gap: 10px; font-weight: bold;">
-                            <label>ვინ გადის შვებულებაში?</label>
+                            <label>შვებულებაში გამსვლელი პირი</label>
                             <select name="employee_id" required class="placeholder-option">
                                 <option value="" disabled selected hidden >არჩევა</option>
                                 {% for emp in employees %}
                                     <option value="{{ emp.id }}">{{ emp.name }}</option>
                                 {% endfor %}
                             </select>
-
-                            <label>ვინ ჩაანაცვლებს?</label>
-                            <select name="substitute_id" required class="placeholder-option">
-                            <option value="" disabled selected hidden>არჩევა</option>
-                                {% for emp in employees %}
-                                    <option value="{{ emp.id }}">{{ emp.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <label>აირჩიეთ თარიღი?</label>
-
+                            <label>დაწყების თარიღი</label>
                             <input type="date" name="start_date" required>
+                            <label>დასრულების თარიღი</label>
                             <input type="date" name="end_date" required>
 
                             <button type="submit" class="btn btn-danger btn-sm">შვებულების გაფორმება</button>
@@ -89,8 +81,7 @@
                         <h3 style="color: #323539; font-size: 20px; font-weight: 500; margin-top: 10px;">არსებული შვებულებები</h3>
                         {% for v in vacations %}
                             <div class="course-info-card" style="background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; color: #333; position: relative;">
-                                <p><strong> შვებულებაში მყოფი თანამშრომელი:</strong> {{ v.employee_name }}</p> <p><strong>მისი შემცვლელია:</strong> {{ v.substitute_name }}</p> <p><strong>პერიოდი:</strong> {{ v.start_date }} -დან {{ v.end_date }}-მდე</p>
-
+                                <p><strong> შვებულებაშია:</strong> {{ v.employee_name }}</p><p><strong>პერიოდი:</strong> {{ v.start_date }} -დან {{ v.end_date }}-მდე</p>
                                 <a href="{{ url_for('vacations.delete_vacation', id=v.id) }}"
                                    class="btn btn-danger btn-sm"
                                    onclick="return confirm('დარწმუნებული ხართ, რომ გსურთ შვებულების გაუქმება? მორიგეობები დაუბრუნდება ძველ თანამშრომელს.')">

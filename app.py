@@ -23,20 +23,13 @@ app.register_blueprint(vacations_bp)
 
 #employee cponfig
 
-employees = ["მარიამ", "ზურა", "გიორგი", "საბა", "ბექა"]
-anchor_date = datetime(2026, 1, 1).date()
-
-
-def count_workdays(target_date):
-    if target_date < anchor_date:
-        return 0
-    count = 0
-    current =  anchor_date
-    while current < target_date:
-        if current.weekday() != 6:
-            count += 1
-        current += timedelta(days=1)
-    return count
+ka_names = {
+    "Mariam":"მარიამ",
+    "Zura":"ზურა",
+    "Giorgi":"გიორგი",
+    "Beqa":"ბექა",
+    "Saba":"საბა"
+}
 
 ka_weekdays = {
     'Monday':    'ორშაბათი',
@@ -48,48 +41,11 @@ ka_weekdays = {
     'Sunday':    'კვირა'
 }
 
-
-#start_date-დან დაწყებით ცვლების გამოთვლა, დააბრუნებს "დასვენების დღეს"
-def generate_shifts(start_date, days=90):
-    """
-    გენერირებს ცვლებს start_date-დან days რაოდენობის წინ.
-    თანამშრომლები ფიქსირდება ANCHOR_DATE-დან.
-    """
-    shifts = []
-    current = start_date
-
-    for _ in range(days):
-        weekday = current.weekday()
-        date_str = current.strftime('%Y-%m-%d')
-        day_name = ka_weekdays [current.strftime('%A')]
-
-        if weekday != 6:
-            # გამოთვლა ფიქსირებული ინდექსი
-            workdays_passed = count_workdays(current)
-            employee_index = workdays_passed % len(employees)
-            employee = employees[employee_index]
-        else:
-            employee = "დასვენების დღე"
-
-        shifts.append({
-            'shift_date': date_str,
-            'day_name': day_name,
-            'employee_name': employee
-        })
-
-        current += timedelta(days=1)
-
-    return shifts
-
 @app.route('/')
 def index():
     if 'loggedin' in session:
         return redirect(url_for('main'))
     return redirect(url_for('auth.login'))
-
-
-
-
 
 @app.route('/class')
 def my_class():
@@ -112,58 +68,58 @@ def my_class():
 
 @app.route('/main')
 def main():
-    tbilisi_tz = pytz.timezone('Asia/Tbilisi')
-    today = datetime.now(tbilisi_tz).date()
+    db = get_db()
+    cursor = db.cursor()
     if 'loggedin' not in session:
         return redirect(url_for('auth.login'))
 
     try:
-        chosen_date_str = request.args.get('filter_date')
-        if chosen_date_str:
-            try:
-                start_date = datetime.strptime(chosen_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                start_date = today
-                flash("არასწორი თარიღის ფორმატი — გამოიყენება დღევანდელი თარიღი", "warning")
-        else:
-            start_date = today
+        tbilisi_tz = pytz.timezone('Asia/Tbilisi')
+        today = datetime.now(tbilisi_tz).date()
 
-        search_keyword = request.args.get('search_keyword', '').strip().lower()
-
-        # გენერირება საკმარისი დღეების (მაგ. 90, რომ თვე გაეტიოს)
-        all_shifts = generate_shifts(start_date, days=90)
+        search_keyword = request.args.get('searchkeyword', '').strip()
+        chosen_date = request.args.get('filter_date')
+        start_date = chosen_date if chosen_date else today
 
         if search_keyword:
-            # თუ სახელი მითითებულია — ფილტრი იმ თანამშრომლის ცვლებზე + ერთ თვეში (დღევანდელიდან)
-            end_date = today + timedelta(days=14)  # ერთი თვე წინ
-            filtered_shifts = [
-                s for s in all_shifts
-                if search_keyword in s['employee_name'].lower()
-            ]
+            limit_date = today + timedelta(days=30)
+            query = """
+                    SELECT s.shift_date, DAYNAME(s.shift_date) as day_name, e.name as employee_name
+                    FROM shifts s
+                    LEFT JOIN employees e ON s.employee_id = e.id
+                    WHERE e.name LIKE %s AND s.shift_date BETWEEN %s AND %s
+                    ORDER BY s.shift_date
+                """
+            cursor.execute(query, (f"%{search_keyword}%", today, limit_date))
         else:
-            # თუ სახელი არ არის — ყველა ცვლა, მაგრამ შეზღუდული 35 დღით დღევანდელიდან
-            filtered_shifts = [
-                s for s in all_shifts
-                if datetime.strptime(s['shift_date'], '%Y-%m-%d').date() >= today
-            ][:35]
+            query = """
+                    SELECT s.shift_date, DAYNAME(s.shift_date) as day_name, e.name as employee_name
+                    FROM shifts s
+                    LEFT JOIN employees e ON s.employee_id = e.id
+                    WHERE s.shift_date >= %s
+                    ORDER BY s.shift_date
+                    LIMIT 14
+                """
+            cursor.execute(query, (start_date,))
 
-        return render_template(
-            'main.html',
-            shifts=filtered_shifts,
-            email=session.get('email'),
-            today=today.strftime('%Y-%m-%d'),
-            search_keyword=search_keyword,
-            filter_date=chosen_date_str or today.strftime('%Y-%m-%d')
-        )
+
+
+        shifts = cursor.fetchall()
+
+        for shift in shifts:
+            if shift['shift_date']:
+                shift['shift_date'] = shift['shift_date'].strftime('%Y-%m-%d')
+            english_day = shift['day_name']
+            shift['day_name'] = ka_weekdays.get(english_day, english_day)
+
+            georgian_name = shift['employee_name']
+            shift['employee_name'] = ka_names.get( georgian_name,  georgian_name)
+
+        return render_template('main.html', shifts=shifts, email=session.get('email'))
 
     except Exception as e:
-        flash(f"შეცდომა გრაფიკის ჩატვირთვისას: {str(e)}", "danger")
-        return render_template(
-            'main.html',
-            shifts=[],
-            email=session.get('email'),
-            today=today.strftime('%Y-%m-%d')
-        )
+        flash(f"Error loading schedule: {str(e)}", "danger")
+        return render_template('main.html', shifts=[], email=session.get('email'))
 
 
 

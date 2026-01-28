@@ -216,3 +216,24 @@
     }
 
 })(window.jQuery);
+
+const weekdayMap = {
+  'Monday':    'ორშაბათი',
+  'Tuesday':   'სამშაბათი',
+  'Wednesday': 'ოთხშაბათი',
+  'Thursday':  'ხუთშაბათი',
+  'Friday':    'პარასკევი',
+  'Saturday':  'შაბათი',
+  'Sunday':    'კვირა',
+  'monday':    'ორშაბათი',
+  'tuesday':   'სამშაბათი',
+  'wednesday': 'ოთხშაბათი',
+  'thursday':  'ხუთშაბათი',
+  'friday':    'პარასკევი',
+  'saturday':  'შაბათი',
+  'sunday':    'კვირა',
+};
+
+function displayInGeorgian(englishName) {
+  return weekdayMap[englishName.trim()] || englishName; // fallback
+}
