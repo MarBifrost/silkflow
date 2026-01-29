@@ -81,12 +81,11 @@
                         <h3 style="color: #323539; font-size: 20px; font-weight: 500; margin-top: 10px;">არსებული შვებულებები</h3>
                         {% for v in vacations %}
                             <div class="course-info-card" style="background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px; color: #333; position: relative;">
-                                <p><strong> შვებულებაშია:</strong> {{ v.employee_name }}</p><p><strong>პერიოდი:</strong> {{ v.start_date }} -დან {{ v.end_date }}-მდე</p>
-                                <a href="{{ url_for('vacations.delete_vacation', id=v.id) }}"
-                                   class="btn btn-danger btn-sm"
-                                   onclick="return confirm('დარწმუნებული ხართ, რომ გსურთ შვებულების გაუქმება? მორიგეობები დაუბრუნდება ძველ თანამშრომელს.')">
-                                   შვებულების გაუქმება
-                                </a>
+                                <p><strong> შვებულებაშია:</strong> {{ v.employee_name }}</p><p>
+                                <strong>პერიოდი:</strong> {{ v.start_date }} -დან {{ v.end_date }}-მდე</p>
+                                <form action="{{ url_for('vacations.delete_vacation', id=v.id) }}" method="post" onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ შვებულების გაუქმება?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">შვებულების გაუქმება</button>
+                                </form>
                             </div>
                         {% endfor %}
                     </div>

@@ -74,7 +74,6 @@ def add_vacation():
 
     db = get_db()
     emp_id = request.form['employee_id']
-    base_emp_id = request.form['base_employee_id']
     s_date = request.form['start_date']
     e_date = request.form['end_date']
 
@@ -105,15 +104,13 @@ def add_vacation():
 
             #clear employee from shifts during vacation
             cursor.execute("""
-                update shifts set base_employee_id = NULL 
+                update shifts set base_employee_id = 9 
                 where employee_id = %s
                 and shift_date between %s and %s
             """, (emp_id, s_date, e_date))
 
         db.commit()
         flash ("შვებულება წარმატებით დაემატა", "success")
-
-
 
 
     except Exception as e:
@@ -124,14 +121,15 @@ def add_vacation():
     return redirect(url_for('vacations.vacations'))
 
 
-@vacations_bp.route('/delete_vacation/<int:id>')
+@vacations_bp.route('/delete_vacation/<int:id>', methods=['POST', 'GET'])
 def delete_vacation(id):
     if 'loggedin' not in session:
         return redirect(url_for('auth.login'))
 
+    db = get_db()
     try:
-        db = get_db()
         with get_db_cursor() as cursor:
+            # 1. Fetch the vacation details before deleting
             cursor.execute("SELECT * FROM vacations WHERE id = %s", (id,))
             vacation = cursor.fetchone()
 
@@ -139,27 +137,28 @@ def delete_vacation(id):
                 flash("Vacation record not found", "danger")
                 return redirect(url_for('vacations.vacations'))
 
-            # Restore original employee in affected shifts
+            # 2. Restore the shifts
             cursor.execute("""
-                UPDATE shifts
-                SET employee_id = %s
-                WHERE employee_id = %s
+                UPDATE shifts 
+                SET base_employee_id = NULL
+                WHERE employee_id = %s 
                   AND shift_date BETWEEN %s AND %s
             """, (
                 vacation['employee_id'],
-                vacation['substitute_id'],
                 vacation['start_date'],
                 vacation['end_date']
             ))
 
+            # 3. Delete the vacation record
             cursor.execute("DELETE FROM vacations WHERE id = %s", (id,))
 
             db.commit()
-            flash("Vacation deleted successfully. Original assignments restored.", "success")
+            flash("Vacation deleted and shifts restored successfully.", "success")
 
     except Exception as e:
-        db = get_db()
         db.rollback()
-        flash(f"Error deleting vacation: {str(e)}", "danger")
+        # Log the error to your console for easier debugging
+        print(f"Database Error: {e}")
+        flash("An error occurred while deleting the vacation.", "danger")
 
     return redirect(url_for('vacations.vacations'))

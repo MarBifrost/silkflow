@@ -21,7 +21,7 @@ init_db(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(vacations_bp)
 
-#employee cponfig
+#employee config
 
 ka_names = {
     "Mariam":"მარიამ",
