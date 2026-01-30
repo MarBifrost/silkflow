@@ -21,10 +21,11 @@ def login():
             cursor = db.cursor()
 
             cursor.execute(
-                'SELECT * FROM users WHERE email = %s AND password = %s',
+                'SELECT * FROM employees  WHERE email = %s AND password = %s',
                 (email, password)
             )
             account = cursor.fetchone()
+
 
             if account:
                 session['loggedin'] = True

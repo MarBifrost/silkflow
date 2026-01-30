@@ -52,8 +52,11 @@
     </div>
   </header>
 
+
+
   <div class="main-banner" id="top">
   <div class="container">
+
     <div class="row">
       <div class="col-lg-8 offset-lg-2">
         <div class="header-text text-center animate__animated animate__fadeIn">
@@ -88,6 +91,18 @@
                                 </form>
                             </div>
                         {% endfor %}
+                    <div class="container mt-3">
+                      {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                          {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+                              {{ message }}
+                              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                          {% endfor %}
+                        {% endif %}
+                      {% endwith %}
+                    </div>
                     </div>
                   </div>
                 </div>
@@ -103,6 +118,15 @@
   <script src="/static/vendor/jquery/jquery.min.js"></script>
   <script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
   <script src="/static/assets/js/custom.js"></script>
+{#    <script>#}
+{#      {% with messages = get_flashed_messages() %}#}
+{#        {% if messages %}#}
+{#          {% for message in messages %}#}
+{#            alert("{{ message | safe }}");#}
+{#          {% endfor %}#}
+{#        {% endif %}#}
+{#      {% endwith %}#}
+{#    </script>#}
 
 </body>
 </html>

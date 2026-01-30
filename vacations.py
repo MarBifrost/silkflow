@@ -83,17 +83,21 @@ def add_vacation():
 
     try:
         with get_db_cursor() as cursor:
+            if s_date > e_date:
+                flash("არასწორი დრო", "danger")
+                return redirect(url_for('vacations.vacations'))
+
+            #გადაფარვის შემოწმება
             cursor.execute("""
-                select 1 from vacations
-                where employee_id = %s
-                and start_date <= %s
-                and end_date >= %s
-                limit 1
-            """, (emp_id, s_date, e_date))
+                        SELECT 1 FROM vacations 
+                        WHERE employee_id = %s 
+                        LIMIT 1
+                    """, (emp_id,))
 
             if cursor.fetchone():
-                flash ("ეს თანამშრომელი უკვე შვებულებაშია", "danger")
+                flash("შვებულება უკვე გაფორმებულია, ახალს ვერ დაამატებთ", "danger")
                 return redirect(url_for('vacations.vacations'))
+
 
             #insert vacation
             cursor.execute("""
@@ -104,13 +108,13 @@ def add_vacation():
 
             #clear employee from shifts during vacation
             cursor.execute("""
-                update shifts set base_employee_id = 9 
+                update shifts set replacement_reason = 9 
                 where employee_id = %s
                 and shift_date between %s and %s
             """, (emp_id, s_date, e_date))
 
         db.commit()
-        flash ("შვებულება წარმატებით დაემატა", "success")
+        # flash ("შვებულება წარმატებით დაემატა", "success")
 
 
     except Exception as e:
@@ -139,10 +143,10 @@ def delete_vacation(id):
 
             # 2. Restore the shifts
             cursor.execute("""
-                UPDATE shifts 
-                SET base_employee_id = NULL
-                WHERE employee_id = %s 
-                  AND shift_date BETWEEN %s AND %s
+                            UPDATE shifts 
+                            SET replacement_reason = NULL
+                            WHERE employee_id = %s 
+                              AND shift_date BETWEEN %s AND %s
             """, (
                 vacation['employee_id'],
                 vacation['start_date'],
@@ -153,7 +157,6 @@ def delete_vacation(id):
             cursor.execute("DELETE FROM vacations WHERE id = %s", (id,))
 
             db.commit()
-            flash("Vacation deleted and shifts restored successfully.", "success")
 
     except Exception as e:
         db.rollback()
@@ -162,3 +165,83 @@ def delete_vacation(id):
         flash("An error occurred while deleting the vacation.", "danger")
 
     return redirect(url_for('vacations.vacations'))
+
+
+# @vacations_bp.route('/edit_vacation/<int:id>', methods=['GET', 'POST'])
+# def edit_vacation(id):
+#     if 'loggedin' not in session:
+#         return redirect(url_for('auth.login'))
+#
+#     db = get_db()
+#     current_user_emp_id = session['employee_id']
+#
+#     try:
+#         with get_db_cursor() as cursor:
+#             #არსებული შვებულება
+#             cursor.execute("SELECT * FROM vacations WHERE id = %s", (id,))
+#             vacation = cursor.fetchone()
+#
+#             if not vacation:
+#                 flash("შვებულება არ მოიძებნა", "danger")
+#                 return redirect(url_for('vacations.vacations'))
+#
+#             #უფლების შემოწმება - მხოლოდ თავისი რომ მოძებნოს
+#             if vacation['employee_id'] != current_user_emp_id:
+#                 flash("მხოლოდ თქვენი შვებულების რედაქტირება შეგიძლიათ")
+#                 return redirect(url_for('vacations.vacations'))
+#
+#             s_date = request.form.get('start_date')
+#             e_date = request.form.get('end_date')
+#
+#             if s_date > e_date:
+#                 flash("არასწორი დრო", "danger")
+#                 return redirect(url_for('vacations.vacations'))
+#
+#             #შევამოწმოთ ხომ არ არის შვებულება ამ დროებში
+#             cursor.execute("""
+#                             select 1 from vacations where employee_id = %s
+#                             and id != %s
+#                             and start_date <= %s
+#                             and end_date >= %s
+#                             limit 1
+#
+#             """, (current_user_emp_id, id, s_date, e_date))
+#
+#             if cursor.fetchone():
+#                 flash("შვებულება უკვე გაფორმებულია ამ პერიოდში, ახალს ვერ შექმნით", "danger")
+#                 return redirect(url_for('vacations.vacations'))
+#
+#             #ძველი პერიოდის გათავისუფლება
+#             old_start = vacation['start_date']
+#             old_end = vacation['end_date']
+#
+#             cursor.execute("""
+#                             update shifts set replacement_reason = NULL
+#                             where employee_id = %s
+#                             and shift_date between %s and %s
+#                             """, (current_user_emp_id, old_start, old_end))
+#
+#             #ახალზე ბეისზე შეცვლა 9-ით
+#             cursor.execute("""
+#                             UPDATE shifts
+#                             SET replacement_reason = 9
+#                             WHERE employee_id = %s
+#                             AND shift_date BETWEEN %s AND %s
+#                         """, (current_user_emp_id, s_date, e_date))
+#
+#             # 6. vacations ცხრილის განახლება
+#             cursor.execute("""
+#                     UPDATE vacations
+#                     SET start_date = %s, end_date = %s
+#                     WHERE id = %s
+#                 """, (s_date, e_date, id))
+#
+#             db.commit()
+#             flash("შვებულება წარმატებით განახლდა", "success")
+#
+#     except Exception as e:
+#         db.rollback()
+#         flash(f"შეცდომა რედაქტირებისას: {str(e)}", "danger")
+#         print("Edit vacation error:", str(e))
+#
+#     return redirect(url_for('vacations.vacations'))
