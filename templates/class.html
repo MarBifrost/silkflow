@@ -84,26 +84,18 @@
                     <label for="end_date" class="form-label">დასრულების თარიღი</label>
                     <input type="date" class="form-control" id="end_date" name="end_date" required>
                   </div>
-                </div>
 
-                <div class="mb-3">
+                    <div class="col-md-6 mb-3">
                   <label for="days_of_week" class="form-label">კვირის დღეები</label>
                   <input type="text" class="form-control" id="days_of_week" name="days_of_week" required
                          placeholder="მაგ: ორშაბათი/ხუთშაბათი">
                 </div>
-
-                <div class="row">
-                  <div class="col-md-6 mb-3">
+                <div class="col-md-6 mb-3">
                     <label for="class_time" class="form-label">დაწყების დრო</label>
                     <input type="time" class="form-control" id="class_time" name="class_time" required>
                   </div>
-
-                  <div class="col-md-6 mb-3">
-                    <label for="duration" class="form-label">ხანგრძლივობა</label>
-                    <input type="text" class="form-control" id="duration" name="duration" required
-                           placeholder="მაგ: 8 თვე ან 12 კვირა">
-                  </div>
                 </div>
+
 
                 <div class="text-center mt-4">
                   <button type="submit" class="btn btn-primary btn-lg px-5">კურსის დამატება</button>
@@ -128,7 +120,6 @@
                          {{ c.start_date }} – {{ c.end_date }}</p>
                       <p><strong><i class="fa fa-clock"></i> დღეები:</strong> {{ c.days_of_week }}</p>
                       <p><strong><i class="fa fa-hourglass-half"></i> დრო:</strong> {{ c.class_time }}</p>
-                      <p><strong><i class="fa fa-hourglass-half"></i> ხანგრძლივობა:</strong> {{ c.duration }}</p>
                         {% if session.role == 'admin' %}
                       <form method="post" action="{{ url_for('delete_course', id=c.id) }}"
                             onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ წაშლა?');">
