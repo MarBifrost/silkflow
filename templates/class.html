@@ -57,6 +57,7 @@
       <div class="row">
         <div class="col-lg-8 offset-lg-2">
           <div class="header-text text-center animate__animated animate__fadeIn">
+          {% if session.role == 'admin' %}
             <div class="mt-5 course-add-form" style="background: #7a6ad8; padding: 40px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
               <h3 class="text-center mb-4" style="color: #f9fafb; font-size: 26px; font-weight: normal">ახალი კურსის დამატება</h3>
 
@@ -110,6 +111,7 @@
               </form>
             </div>
 
+          {% endif %}
             {% if course %}
               <div class="row g-4 mt-4">
                 {% for c in course %}
@@ -127,11 +129,12 @@
                       <p><strong><i class="fa fa-clock"></i> დღეები:</strong> {{ c.days_of_week }}</p>
                       <p><strong><i class="fa fa-hourglass-half"></i> დრო:</strong> {{ c.class_time }}</p>
                       <p><strong><i class="fa fa-hourglass-half"></i> ხანგრძლივობა:</strong> {{ c.duration }}</p>
-
+                        {% if session.role == 'admin' %}
                       <form method="post" action="{{ url_for('delete_course', id=c.id) }}"
                             onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ წაშლა?');">
                         <button type="submit" class="btn btn-danger btn-sm">კურსის წაშლა</button>
                       </form>
+                        {% endif %}
                     </div>
                   </div>
                 {% endfor %}

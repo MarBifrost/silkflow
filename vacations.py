@@ -55,14 +55,15 @@ def vacations():
 
     try:
         with get_db_cursor() as cursor:
-            cursor.execute("SELECT id, name FROM employees ORDER BY name")
+            cursor.execute("SELECT id, name FROM employees where role != 'admin' ORDER BY name")
             employees_list = cursor.fetchall()
 
-            # All vacations with readable names, newest first
+            # All vacations with readable names and email, newest first
             query = """
                 SELECT
                     v.id,
                     e1.name AS employee_name,
+                    e1.email,
                     v.start_date,
                     v.end_date
                 FROM vacations v
@@ -76,7 +77,6 @@ def vacations():
                 if vacation['employee_name']:
                     georgian_name = vacation['employee_name']
                     vacation['employee_name'] = ka_names.get(georgian_name, georgian_name)
-
 
             return render_template(
                 'vacations.html',
@@ -154,36 +154,45 @@ def delete_vacation(id):
 
     db = get_db()
     try:
-        with get_db_cursor() as cursor:
-            # 1. Fetch the vacation details before deleting
+        with db.cursor() as cursor:
+            # 1. ვიღებთ შვებულებას id-ით
             cursor.execute("SELECT * FROM vacations WHERE id = %s", (id,))
             vacation = cursor.fetchone()
 
             if not vacation:
-                flash("Vacation record not found", "danger")
+                flash("შვებულება ვერ მოიძებნა", "danger")
                 return redirect(url_for('vacations.vacations'))
 
-            # 2. Restore the shifts
+            # 2. ვამოწმებთ უფლებას
+            current_user_id = session['id']           # ← აქ არის შენი ID
+            is_admin = session.get('role') == 'admin'
+            is_owner = vacation['employee_id'] == current_user_id
+
+            if not (is_admin or is_owner):
+                flash("თქვენ არ გაქვთ უფლება წაშალოთ ეს შვებულება", "danger")
+                return redirect(url_for('vacations.vacations'))
+
+            # 3. აღვადგენთ მორიგეობებს (replacement_reason = NULL)
             cursor.execute("""
-                            UPDATE shifts 
-                            SET replacement_reason = NULL
-                            WHERE employee_id = %s 
-                              AND shift_date BETWEEN %s AND %s
+                UPDATE shifts 
+                SET replacement_reason = NULL
+                WHERE employee_id = %s 
+                  AND shift_date BETWEEN %s AND %s
             """, (
                 vacation['employee_id'],
                 vacation['start_date'],
                 vacation['end_date']
             ))
 
-            # 3. Delete the vacation record
+            # 4. ვშლით შვებულებას
             cursor.execute("DELETE FROM vacations WHERE id = %s", (id,))
 
             db.commit()
+            flash("შვებულება წარმატებით წაიშალა", "success")
 
     except Exception as e:
         db.rollback()
-        # Log the error to your console for easier debugging
-        print(f"Database Error: {e}")
-        flash("An error occurred while deleting the vacation.", "danger")
+        print(f"Error deleting vacation ID {id}: {e}")
+        flash("შეცდომა შვებულების წაშლისას", "danger")
 
     return redirect(url_for('vacations.vacations'))

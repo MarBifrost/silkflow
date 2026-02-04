@@ -31,6 +31,7 @@ def login():
                 session['loggedin'] = True
                 session['id']       = account['id']
                 session['email']    = account['email']
+                session['role']     = account['role']
                 return redirect(url_for('index'))   # or 'main.index' etc.
             else:
                 msg = 'არასწორი ელ.ფოსტა ან პაროლი'
@@ -46,3 +47,8 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for('auth.login'))
+
+
+def is_admin():
+    """ამოწმებს, არის თუ არა მომხმარებელი ადმინი"""
+    return session.get('role') == 'admin'

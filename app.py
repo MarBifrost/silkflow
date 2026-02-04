@@ -1,7 +1,7 @@
 from flask import Flask, render_template, session, redirect, url_for, request, flash
 from database import init_db, get_db
 from contextlib import contextmanager
-from auth import auth_bp
+from auth import auth_bp, is_admin
 from vacations import vacations_bp
 from datetime import datetime, timedelta
 import pytz
@@ -86,41 +86,43 @@ def add_class():
     if 'loggedin' not in session:
         return redirect(url_for('auth.login'))
 
-    c_name = request.form.get('course_name')
-    m_name = request.form.get('mentor_name')
-    s_date = request.form.get('start_date')
-    e_date = request.form.get('end_date')
-    w_days = request.form.get('days_of_week')
-    class_time = request.form.get('class_time')
-    duration = request.form.get('duration')
+    if is_admin():
+        c_name = request.form.get('course_name')
+        m_name = request.form.get('mentor_name')
+        s_date = request.form.get('start_date')
+        e_date = request.form.get('end_date')
+        w_days = request.form.get('days_of_week')
+        class_time = request.form.get('class_time')
+        duration = request.form.get('duration')
 
-    if not all([c_name, m_name, s_date, e_date, w_days, class_time, duration]):
-        flash("ყველა ველი სავალდებულოა", "danger")
+        if not all([c_name, m_name, s_date, e_date, w_days, class_time, duration]):
+            flash("ყველა ველი სავალდებულოა", "danger")
+            return redirect(url_for('my_class'))
+
+        try:
+            with get_db_cursor() as cursor:
+                if s_date > e_date or not w_days:
+                    flash("არასწორი დრო ან დღეები", "danger")
+                    return redirect(url_for('my_class'))
+
+                cursor.execute("SELECT 1 FROM courses WHERE course_name = %s LIMIT 1", (c_name,))
+                if cursor.fetchone():
+                    flash("კურსი ასეთი სახელით უკვე დამატებულია", "danger")
+                    return redirect(url_for('my_class'))
+
+                cursor.execute("""
+                    INSERT INTO courses 
+                    (course_name, mentor_name, start_date, end_date, days_of_week, class_time, duration)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (c_name, m_name, s_date, e_date, w_days, class_time, duration))
+
+            flash("კურსი წარმატებით დაემატა", "success")
+        except Exception as e:
+            flash(f"Error adding class: {str(e)}", "danger")
+            print("Courses error:", str(e))
+
         return redirect(url_for('my_class'))
 
-    try:
-        with get_db_cursor() as cursor:
-            if s_date > e_date or not w_days:
-                flash("არასწორი დრო ან დღეები", "danger")
-                return redirect(url_for('my_class'))
-
-            cursor.execute("SELECT 1 FROM courses WHERE course_name = %s LIMIT 1", (c_name,))
-            if cursor.fetchone():
-                flash("კურსი ასეთი სახელით უკვე დამატებულია", "danger")
-                return redirect(url_for('my_class'))
-
-            cursor.execute("""
-                INSERT INTO courses 
-                (course_name, mentor_name, start_date, end_date, days_of_week, class_time, duration)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (c_name, m_name, s_date, e_date, w_days, class_time, duration))
-
-        flash("კურსი წარმატებით დაემატა", "success")
-    except Exception as e:
-        flash(f"Error adding class: {str(e)}", "danger")
-        print("Courses error:", str(e))
-
-    return redirect(url_for('my_class'))
 
 
 @app.route('/delete_class/<int:id>', methods=['POST'])
@@ -161,6 +163,7 @@ def find_replacement(shift_date, excluded_emp_id, cursor):
                 AND s.shift_date BETWEEN DATE_SUB(%s, INTERVAL 30 DAY) AND DATE_SUB(%s, INTERVAL 1 DAY)
                 AND s.replacement_reason IS NULL
             WHERE e.id != %s
+            AND e.role != 'admin'
               AND NOT EXISTS (
                   SELECT 1 
                   FROM shifts vs 
