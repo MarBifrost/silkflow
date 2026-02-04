@@ -38,12 +38,6 @@
             <a href="{{ url_for('main') }}" class="logo">
               <h1>SilkFlow</h1>
             </a>
-{#            <div class="search-input">#}
-{#              <form id="search" action="{{ url_for('main') }}" method="GET">#}
-{#                <input type="text" placeholder="ძებნა სახელით..." id='searchText' name="searchKeyword" />#}
-{#                <i class="fa fa-search"></i>#}
-{#              </form>#}
-{#            </div>#}
             <ul class="nav">
               <li class="scroll-to-section"><a href="{{ url_for('main') }}">გრაფიკი</a></li>
               <li class="scroll-to-section"><a href="{{ url_for('vacations.vacations') }}">შვებულებები</a></li>
@@ -58,34 +52,101 @@
     </div>
   </header>
 
-  <div class="main-banner" id="top">
-  <div class="container">
-    <div class="row">
-      <div class="col-lg-8 offset-lg-2">
-        <div class="header-text text-center animate__animated animate__fadeIn">
-          {% if course %}
-              {% for c in course %}
-                <div class="course-info-card" style="background: white; padding: 40px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); color: #333;">
-                  <div class="row text-start">
-                    <div class="col-md-6 mb-3">
-                      <p><strong><i class="fa fa-user"></i> კურსის დასახელება:</strong> {{ c.course_name }}</p>
-                      <p><strong><i class="fa fa-user"></i> მენტორი:</strong> {{ c.mentor_name }}</p>
-                      <p><strong><i class="fa fa-calendar"></i> პერიოდი:</strong> {{ c.start_date }} -დან {{ c.end_date }}-მდე</p>
-                      <p><strong><i class="fa fa-clock"></i> დღეები:</strong> {{ c.days_of_week }}</p>
-                      <p><strong><i class="fa fa-hourglass-half"></i> დრო :</strong> {{ c.class_time }} </p>
-                      <p><strong><i class="fa fa-hourglass-half"></i> ხანგრძლივობა:</strong> {{ c.duration }}</p>
-                    </div>
+  <div class="main-banner" id="top" style="font-weight: bold; background-color: #7a6ad8;">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-8 offset-lg-2">
+          <div class="header-text text-center animate__animated animate__fadeIn">
+            <div class="mt-5 course-add-form" style="background: #7a6ad8; padding: 40px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+              <h3 class="text-center mb-4" style="color: #f9fafb; font-size: 26px; font-weight: normal">ახალი კურსის დამატება</h3>
+
+              <form method="POST" action="{{ url_for('add_class') }}" style="">
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="course_name" class="form-label">კურსის დასახელება</label>
+                    <input type="text" class="form-control" id="course_name" name="course_name" required placeholder="მაგ: Python Advanced">
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label for="mentor_name" class="form-label">მენტორის სახელი</label>
+                    <input type="text" class="form-control" id="mentor_name" name="mentor_name" required placeholder="მაგ: Giorgi">
                   </div>
                 </div>
-              {% endfor %}
-          {% else %}
-            <h2>კურსები არ გაქვთ დამატებული</h2>
-          {% endif %}
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="start_date" class="form-label">დაწყების თარიღი</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" required>
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label for="end_date" class="form-label">დასრულების თარიღი</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" required>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="days_of_week" class="form-label">კვირის დღეები</label>
+                  <input type="text" class="form-control" id="days_of_week" name="days_of_week" required
+                         placeholder="მაგ: ორშაბათი/ხუთშაბათი">
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="class_time" class="form-label">დაწყების დრო</label>
+                    <input type="time" class="form-control" id="class_time" name="class_time" required>
+                  </div>
+
+                  <div class="col-md-6 mb-3">
+                    <label for="duration" class="form-label">ხანგრძლივობა</label>
+                    <input type="text" class="form-control" id="duration" name="duration" required
+                           placeholder="მაგ: 8 თვე ან 12 კვირა">
+                  </div>
+                </div>
+
+                <div class="text-center mt-4">
+                  <button type="submit" class="btn btn-primary btn-lg px-5">კურსის დამატება</button>
+                </div>
+              </form>
+            </div>
+
+            {% if course %}
+              <div class="row g-4 mt-4">
+                {% for c in course %}
+                  <div class="col-md-6">
+                    <div class="course-info-card h-100"
+                         style="background: white; padding: 30px; border-radius: 20px;
+                                box-shadow: 0 8px 25px rgba(0,0,0,0.12); color: #333;">
+                      <h5 class="mb-4 text-center fw-bold" style="color: #7a6ad8;">
+                        {{ c.course_name }}
+                      </h5>
+
+                      <p><strong><i class="fa fa-user"></i> მენტორი:</strong> {{ c.mentor_name }}</p>
+                      <p><strong><i class="fa fa-calendar"></i> პერიოდი:</strong>
+                         {{ c.start_date }} – {{ c.end_date }}</p>
+                      <p><strong><i class="fa fa-clock"></i> დღეები:</strong> {{ c.days_of_week }}</p>
+                      <p><strong><i class="fa fa-hourglass-half"></i> დრო:</strong> {{ c.class_time }}</p>
+                      <p><strong><i class="fa fa-hourglass-half"></i> ხანგრძლივობა:</strong> {{ c.duration }}</p>
+
+                      <form method="post" action="{{ url_for('delete_course', id=c.id) }}"
+                            onsubmit="return confirm('დარწმუნებული ხართ, რომ გსურთ წაშლა?');">
+                        <button type="submit" class="btn btn-danger btn-sm">კურსის წაშლა</button>
+                      </form>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+
+            {% else %}
+              <h2 class="text-center mt-5" style="color: white;">კურსები არ გაქვთ დამატებული</h2>
+            {% endif %}
+
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
+
   <script src="/static/vendor/jquery/jquery.min.js"></script>
   <script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
   <script src="/static/assets/js/custom.js"></script>
