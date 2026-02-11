@@ -3,6 +3,8 @@ from typing import List, Tuple, Optional, Dict
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from contextlib import contextmanager
 from database import init_db, get_db
+from logger import log_vacation, log_auth_event, log_shift_assignment
+
 
 vacations_bp = Blueprint('vacations', __name__, template_folder='templates')
 
@@ -52,6 +54,9 @@ def assign_replacements(cursor):
 def vacations():
     if 'loggedin' not in session:
         return redirect(url_for('auth.login'))
+    # Log page access
+    log_auth_event('VIEW_VACATIONS', 'Accessed vacations page')
+
 
     try:
         with get_db_cursor() as cursor:
@@ -109,6 +114,12 @@ def add_vacation():
                 flash("არასწორი დრო", "danger")
                 return redirect(url_for('vacations.vacations'))
 
+            # Get employee name for logging
+            cursor.execute("SELECT name FROM employees WHERE id = %s", (emp_id,))
+            employee = cursor.fetchone()
+            employee_name = employee['name'] if employee else f"ID:{emp_id}"
+
+
             #გადაფარვის შემოწმება
             cursor.execute("""
                         SELECT 1 FROM vacations 
@@ -117,6 +128,7 @@ def add_vacation():
                     """, (emp_id,))
 
             if cursor.fetchone():
+                log_auth_event('ADD_VACATION_FAILED', f'Duplicate vacation for employee: {employee_name}')
                 flash("შვებულება უკვე გაფორმებულია, ახალს ვერ დაამატებთ", "danger")
                 return redirect(url_for('vacations.vacations'))
 
@@ -128,6 +140,8 @@ def add_vacation():
                 values (%s, %s, %s)
             """, (emp_id, s_date, e_date))
 
+            affected_shifts = cursor.rowcount
+
             #clear employee from shifts during vacation
             cursor.execute("""
                 update shifts set replacement_reason = 9 
@@ -136,11 +150,17 @@ def add_vacation():
             """, (emp_id, s_date, e_date))
 
         db.commit()
+
+        # Log successful vacation addition
+        log_vacation(employee_name, s_date, e_date, action='ADDED')
+        log_auth_event('ADD_VACATION',
+                       f'Employee: {employee_name}, Period: {s_date} to {e_date}, Affected shifts: {affected_shifts}')
         # flash ("შვებულება წარმატებით დაემატა", "success")
 
 
     except Exception as e:
         db.rollback()
+        log_auth_event('ADD_VACATION_ERROR', f'Database error: {str(e)}')
         flash(f"Error loading vacations: {str(e)}", "danger")
         print("Vacation error:", str(e))
 
@@ -160,6 +180,7 @@ def delete_vacation(id):
             vacation = cursor.fetchone()
 
             if not vacation:
+                log_auth_event('DELETE_VACATION_FAILED', f'Vacation not found: ID {id}')
                 flash("შვებულება ვერ მოიძებნა", "danger")
                 return redirect(url_for('vacations.vacations'))
 
@@ -169,6 +190,8 @@ def delete_vacation(id):
             is_owner = vacation['employee_id'] == current_user_id
 
             if not (is_admin or is_owner):
+                log_auth_event('DELETE_VACATION_DENIED',
+                              f'Unauthorized attempt to delete vacation ID {id} for {vacation["employee_name"]}')
                 flash("თქვენ არ გაქვთ უფლება წაშალოთ ეს შვებულება", "danger")
                 return redirect(url_for('vacations.vacations'))
 
@@ -183,15 +206,25 @@ def delete_vacation(id):
                 vacation['start_date'],
                 vacation['end_date']
             ))
+            restored_shifts = cursor.rowcount
 
             # 4. ვშლით შვებულებას
             cursor.execute("DELETE FROM vacations WHERE id = %s", (id,))
 
             db.commit()
+            # Log successful deletion
+            log_vacation(vacation['employee_name'],
+                         vacation['start_date'],
+                         vacation['end_date'],
+                         action='DELETED')
+            log_auth_event('DELETE_VACATION',
+                           f'Employee: {vacation["employee_name"]}, Period: {vacation["start_date"]} to {vacation["end_date"]}, Restored shifts: {restored_shifts}')
+
             flash("შვებულება წარმატებით წაიშალა", "success")
 
     except Exception as e:
         db.rollback()
+        log_auth_event('DELETE_VACATION_ERROR', f'Error deleting vacation ID {id}: {str(e)}')
         print(f"Error deleting vacation ID {id}: {e}")
         flash("შეცდომა შვებულების წაშლისას", "danger")
 

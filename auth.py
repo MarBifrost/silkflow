@@ -1,7 +1,7 @@
-# auth.py – cleaned up version
-
 from flask import Blueprint, request, render_template, redirect, url_for, session
 from database import get_db
+from logger import log_auth_event
+
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -32,8 +32,16 @@ def login():
                 session['id']       = account['id']
                 session['email']    = account['email']
                 session['role']     = account['role']
+
+                # Log successful login
+                log_auth_event('LOGIN_SUCCESS',
+                               f"User: {account.get('name')} (Role: {account.get('role')})",
+                               user_email=email)
                 return redirect(url_for('index'))   # or 'main.index' etc.
             else:
+                log_auth_event('LOGIN_FAILED',
+                               f"Failed login attempt for email: {email}",
+                               user_email=email)
                 msg = 'არასწორი ელ.ფოსტა ან პაროლი'
 
         except Exception as e:   # better to catch DB errors

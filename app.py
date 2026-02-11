@@ -5,15 +5,17 @@ from auth import auth_bp, is_admin
 from vacations import vacations_bp
 from datetime import datetime, timedelta
 import pytz
+from logger import log_shift_assignment, log_auth_event, log_action, log_daily_shifts
+
 
 
 app = Flask(__name__)
 app.secret_key = 'mariam123'
 
-app.config['MYSQL_HOST'] = '10.240.0.39'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'qwe123'
-app.config['MYSQL_DB'] = 'silkflow_users'
+app.config['MYSQL_HOST'] = 'hostip'
+app.config['MYSQL_USER'] = '123123'
+app.config['MYSQL_PASSWORD'] = '123123123'
+app.config['MYSQL_DB'] = '123123123'
 
 init_db(app)
 
@@ -93,31 +95,36 @@ def add_class():
         e_date = request.form.get('end_date')
         w_days = request.form.get('days_of_week')
         class_time = request.form.get('class_time')
-        duration = request.form.get('duration')
 
-        if not all([c_name, m_name, s_date, e_date, w_days, class_time, duration]):
+        if not all([c_name, m_name, s_date, e_date, w_days, class_time]):
+            log_auth_event('ADD_CLASS_FAILED', 'Missing required fields')
             flash("ყველა ველი სავალდებულოა", "danger")
             return redirect(url_for('my_class'))
 
         try:
             with get_db_cursor() as cursor:
                 if s_date > e_date or not w_days:
+                    log_auth_event('ADD_CLASS_FAILED', f'Invalid dates for class: {c_name}')
                     flash("არასწორი დრო ან დღეები", "danger")
                     return redirect(url_for('my_class'))
 
                 cursor.execute("SELECT 1 FROM courses WHERE course_name = %s LIMIT 1", (c_name,))
                 if cursor.fetchone():
+                    log_auth_event('ADD_CLASS_FAILED', f'Duplicate class name: {c_name}')
                     flash("კურსი ასეთი სახელით უკვე დამატებულია", "danger")
                     return redirect(url_for('my_class'))
 
                 cursor.execute("""
                     INSERT INTO courses 
-                    (course_name, mentor_name, start_date, end_date, days_of_week, class_time, duration)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                """, (c_name, m_name, s_date, e_date, w_days, class_time, duration))
+                    (course_name, mentor_name, start_date, end_date, days_of_week, class_time)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (c_name, m_name, s_date, e_date, w_days, class_time))
 
+            # Log successful class addition
+            log_auth_event('ADD_CLASS', f'Class: {c_name}, Mentor: {m_name}, Period: {s_date} to {e_date}')
             flash("კურსი წარმატებით დაემატა", "success")
         except Exception as e:
+            log_auth_event('ADD_CLASS_ERROR', f'Database error: {str(e)}')
             flash(f"Error adding class: {str(e)}", "danger")
             print("Courses error:", str(e))
 
@@ -140,9 +147,12 @@ def delete_course(id):
                 return redirect(url_for('my_class'))
 
             cursor.execute("DELETE FROM courses WHERE id = %s", (id,))
+            # Log successful deletion
+            log_auth_event('DELETE_CLASS', f'Class deleted: {course["course_name"]} (ID: {id})')
 
         flash(f"კურსი „{course['course_name']}“ წაიშალა", "success")
     except Exception as e:
+        log_auth_event('DELETE_CLASS_ERROR', f'Error deleting class ID {id}: {str(e)}')
         flash(f"Error deleting class: {str(e)}", "danger")
         print("Courses error:", str(e))
 
@@ -234,9 +244,19 @@ def main():
 
             shifts = cursor.fetchall()
 
+            # Prepare data for logging
+            shifts_for_logging = []
+
             for shift in shifts:
                 orig_name_en = shift['employee_name']
                 shift_date_str = shift['shift_date'].strftime('%Y-%m-%d') if shift['shift_date'] else ''
+
+                log_data = {
+                    'shift_date': shift_date_str,
+                    'is_replacement': False,
+                    'original_employee': None,
+                    'reason': None
+                }
 
                 if shift.get('replacement_reason') == 9:
                     replacer_name_en = find_replacement(
@@ -249,23 +269,43 @@ def main():
                         replacer_ka = ka_names.get(replacer_name_en, replacer_name_en)
                         absent_ka = ka_names.get(orig_name_en, orig_name_en)
                         shift['employee_name'] = f"{replacer_ka} (ანაცვლებს {absent_ka}ს)"
+
+                        # Log replacement
+                        log_data['employee_name'] = replacer_name_en
+                        log_data['is_replacement'] = True
+                        log_data['original_employee'] = orig_name_en
+                        log_data['reason'] = 'Vacation'
+
                     else:
                         absent_ka = ka_names.get(orig_name_en, orig_name_en)
                         shift['employee_name'] = f"{absent_ka} (შემცვლელი არ მოიძებნა)"
+
+                        # Log no replacement found
+                        log_data['employee_name'] = f"{orig_name_en} (No replacement)"
+                        log_data['is_replacement'] = False
+                        log_data['original_employee'] = orig_name_en
+                        log_data['reason'] = 'Vacation - No replacement found'
                 else:
                     shift['employee_name'] = ka_names.get(orig_name_en, orig_name_en)
+                    log_data['employee_name'] = orig_name_en
 
                 shift['shift_date'] = shift_date_str
                 english_day = shift['day_name']
                 shift['day_name'] = ka_weekdays.get(english_day, english_day)
 
+                shifts_for_logging.append(log_data)
+
+            # Log all shifts for the displayed period
+            if shifts_for_logging:
+                log_daily_shifts(shifts_for_logging)
+
         return render_template('main.html', shifts=shifts, email=session.get('email'))
 
     except Exception as e:
+        log_auth_event('ERROR', f'Error loading schedule: {str(e)}')
         flash(f"Error loading schedule: {str(e)}", "danger")
         print("Main error:", str(e))
         return render_template('main.html', shifts=[], email=session.get('email'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)
