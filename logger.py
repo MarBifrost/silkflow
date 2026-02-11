@@ -3,45 +3,39 @@ from logging.handlers import RotatingFileHandler
 import os
 from datetime import datetime
 from functools import wraps
-from flask import session, request
+from flask import session, request, has_request_context
 
-
-#create logs directory if it doesn't exist
+# Create logs directory if it doesn't exist
 if not os.path.exists('logs'):
-    os.mkdir('logs')
+    os.makedirs('logs')
 
-
-#=========================================================================#
-#    shift logger - tracks daily shifts, vacations and its replacements   #
-#=========================================================================#
+# ================================
+# SHIFT LOGGER - Tracks daily shifts, vacations, and replacements
+# ================================
 shift_logger = logging.getLogger('shift_logger')
 shift_logger.setLevel(logging.INFO)
 
 shift_handler = RotatingFileHandler(
-    'logs/shift_log.log',
-    maxBytes=1024 * 1024 * 10, #10mb
-    backupCount=10,
+    'logs/shifts.log',
+    maxBytes=10 * 1024 * 1024,  # 10MB
+    backupCount=10
 )
-
 shift_formatter = logging.Formatter(
     '%(asctime)s | %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-
 shift_handler.setFormatter(shift_formatter)
 shift_logger.addHandler(shift_handler)
 
-
-# ======================================================#
-# AUTH LOGGER - Tracks user authentication and actions  #
-# ======================================================#
-
+# ================================
+# AUTH LOGGER - Tracks user authentication and actions
+# ================================
 auth_logger = logging.getLogger('auth_logger')
 auth_logger.setLevel(logging.INFO)
 
 auth_handler = RotatingFileHandler(
     'logs/auth.log',
-    maxBytes=10*1024*1024,  # 10MB
+    maxBytes=10 * 1024 * 1024,  # 10MB
     backupCount=10
 )
 auth_formatter = logging.Formatter(
@@ -52,20 +46,20 @@ auth_handler.setFormatter(auth_formatter)
 auth_logger.addHandler(auth_handler)
 
 
+# ================================
+# LOGGING FUNCTIONS
+# ================================
 
-# ========================#
-# LOGGING FUNCTIONS       #
-# ========================#
-def log_shift_assignment (shift_date, employee_name, is_replacement=False, original_employee=None, reason=None):
+def log_shift_assignment(shift_date, employee_name, is_replacement=False, original_employee=None, reason=None):
     """
-        Log shift assignments including replacements
+    Log shift assignments including replacements
 
-        Args:
-            shift_date: Date of the shift
-            employee_name: Name of the employee on shift
-            is_replacement: Whether this is a replacement shift
-            original_employee: Name of the original employee (if replacement)
-            reason: Reason for replacement (e.g., vacation)
+    Args:
+        shift_date: Date of the shift
+        employee_name: Name of the employee on shift
+        is_replacement: Whether this is a replacement shift
+        original_employee: Name of the original employee (if replacement)
+        reason: Reason for replacement (e.g., vacation)
     """
     if is_replacement and original_employee:
         message = f"SHIFT | Date: {shift_date} | Employee: {employee_name} | REPLACING: {original_employee} | Reason: {reason or 'Not specified'}"
@@ -74,15 +68,16 @@ def log_shift_assignment (shift_date, employee_name, is_replacement=False, origi
 
     shift_logger.info(message)
 
+
 def log_vacation(employee_name, start_date, end_date, action='ADDED'):
     """
-        Log vacation requests
+    Log vacation requests
 
-        Args:
-            employee_name: Name of the employee
-            start_date: Vacation start date
-            end_date: Vacation end date
-            action: Action type (ADDED, DELETED)
+    Args:
+        employee_name: Name of the employee
+        start_date: Vacation start date
+        end_date: Vacation end date
+        action: Action type (ADDED, DELETED)
     """
     message = f"VACATION {action} | Employee: {employee_name} | Period: {start_date} to {end_date}"
     shift_logger.info(message)
@@ -123,8 +118,19 @@ def log_auth_event(action, details='', user_email=None):
         details: Additional details about the action
         user_email: User email (defaults to session email)
     """
-    user = user_email or session.get('email', 'Unknown')
-    ip = request.remote_addr if request else 'Unknown'
+    # Safely get user from session or parameter
+    user = user_email
+    if not user:
+        try:
+            user = session.get('email', 'Unknown') if has_request_context() else 'System'
+        except:
+            user = 'Unknown'
+
+    # Safely get IP address
+    try:
+        ip = request.remote_addr if has_request_context() and request else 'Unknown'
+    except:
+        ip = 'Unknown'
 
     auth_logger.info(
         '',
@@ -154,7 +160,10 @@ def log_action(action_name):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            user = session.get('email', 'Unknown')
+            try:
+                user = session.get('email', 'Unknown') if has_request_context() else 'System'
+            except:
+                user = 'Unknown'
             log_auth_event(action_name, f"Function: {f.__name__}")
             return f(*args, **kwargs)
 
