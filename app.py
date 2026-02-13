@@ -12,10 +12,10 @@ from logger import log_shift_assignment, log_auth_event, log_action, log_daily_s
 app = Flask(__name__)
 app.secret_key = 'mariam123'
 
-app.config['MYSQL_HOST'] = 'hostip'
-app.config['MYSQL_USER'] = '123123'
-app.config['MYSQL_PASSWORD'] = '123123123'
-app.config['MYSQL_DB'] = '123123123'
+app.config['MYSQL_HOST'] = '10.240.0.39'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = 'qwe123'
+app.config['MYSQL_DB'] = 'silkflow_users'
 
 init_db(app)
 
