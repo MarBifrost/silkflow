@@ -34,7 +34,7 @@ def get_georgian_name(name: str) -> str:
     return ka_names.get(name, name)
 
 
-def get_employees() -> list[Tuple[int, str]]:
+def get_employees() -> List[Tuple[int, str]]:
     with get_db_cursor() as cur:
         cur.execute('SELECT * FROM employees')
 

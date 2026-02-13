@@ -122,6 +122,12 @@
   <script src="/static/vendor/jquery/jquery.min.js"></script>
   <script src="/static/vendor/bootstrap/js/bootstrap.min.js"></script>
   <script src="/static/assets/js/custom.js"></script>
-
+  <script>
+      window.onload = function() {
+		const dateInput = document.getElementById('startDate');
+		const today = new Date().toISOString().split('T')[0];
+		dateInput.value = today;
+	};
+  </script>
 </body>
 </html>
