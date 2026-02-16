@@ -70,6 +70,14 @@
                         <option value="{{ emp.id }}">{{ emp.name }}</option>
                       {% endfor %}
                     </select>
+                  <label>შემცვლელი პირი</label>
+
+                    <select name="substitute_id" class="placeholder-option">
+                      <option value="" disabled selected hidden>აირჩიეთ, თუ წინასწარ გაქვთ მასთან შეთანხმება</option>
+                      {% for emp in employees %}
+                        <option value="{{ emp.id }}">{{ emp.name }}</option>
+                      {% endfor %}
+                    </select>
                     <label>დაწყების თარიღი</label>
                     <input type="date" name="start_date" required>
                     <label>დასრულების თარიღი</label>

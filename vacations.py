@@ -5,16 +5,16 @@ from contextlib import contextmanager
 from database import init_db, get_db
 from logger import log_vacation, log_auth_event, log_shift_assignment
 
-
 vacations_bp = Blueprint('vacations', __name__, template_folder='templates')
 
 ka_names = {
-    "Mariam":"მარიამ",
-    "Zura":"ზურა",
-    "Giorgi":"გიორგი",
-    "Beqa":"ბექა",
-    "Saba":"საბა"
+    "Mariam": "მარიამ",
+    "Zura": "ზურა",
+    "Giorgi": "გიორგი",
+    "Beqa": "ბექა",
+    "Saba": "საბა"
 }
+
 
 @contextmanager
 def get_db_cursor():
@@ -34,7 +34,7 @@ def get_georgian_name(name: str) -> str:
     return ka_names.get(name, name)
 
 
-def get_employees() -> list[Tuple[int, str]]:
+def get_employees() -> List[Tuple[int, str]]:
     with get_db_cursor() as cur:
         cur.execute('SELECT * FROM employees')
 
@@ -43,11 +43,10 @@ def assign_replacements(cursor):
     today = datetime.now().date()
     lookback_date = today - timedelta(days=30)
 
-    #ვიღებთყველას მორიგეობას
+    # ვიღებთყველას მორიგეობას
     cursor.execute("""
         select * from shifts where (employee_id is not null)
     """)
-
 
 
 @vacations_bp.route('/vacations')
@@ -57,22 +56,23 @@ def vacations():
     # Log page access
     log_auth_event('VIEW_VACATIONS', 'Accessed vacations page')
 
-
     try:
         with get_db_cursor() as cursor:
             cursor.execute("SELECT id, name FROM employees where role != 'admin' ORDER BY name")
             employees_list = cursor.fetchall()
 
-            # All vacations with readable names and email, newest first
+            # All vacations with readable names, email, and substitute info
             query = """
                 SELECT
                     v.id,
                     e1.name AS employee_name,
                     e1.email,
                     v.start_date,
-                    v.end_date
+                    v.end_date,
+                    e2.name AS substitute_name
                 FROM vacations v
                 JOIN employees e1 ON v.employee_id = e1.id
+                LEFT JOIN employees e2 ON v.substitute_id = e2.id
                 ORDER BY v.start_date DESC
             """
             cursor.execute(query)
@@ -82,6 +82,9 @@ def vacations():
                 if vacation['employee_name']:
                     georgian_name = vacation['employee_name']
                     vacation['employee_name'] = ka_names.get(georgian_name, georgian_name)
+                if vacation.get('substitute_name'):
+                    substitute_georgian = vacation['substitute_name']
+                    vacation['substitute_name'] = ka_names.get(substitute_georgian, substitute_georgian)
 
             return render_template(
                 'vacations.html',
@@ -100,9 +103,10 @@ def add_vacation():
         return redirect(url_for('auth.login'))
 
     db = get_db()
-    emp_id = request.form['employee_id']
-    s_date = request.form['start_date']
-    e_date = request.form['end_date']
+    emp_id = request.form.get('employee_id')
+    substitute_id = request.form.get('substitute_id')
+    s_date = request.form.get('start_date')
+    e_date = request.form.get('end_date')
 
     if not all([emp_id, s_date, e_date]):
         flash("ყველა ველი სავალდებულოა", "danger")
@@ -119,8 +123,14 @@ def add_vacation():
             employee = cursor.fetchone()
             employee_name = employee['name'] if employee else f"ID:{emp_id}"
 
+            # Get substitute name if provided
+            substitute_name = None
+            if substitute_id:
+                cursor.execute("SELECT name FROM employees WHERE id = %s", (substitute_id,))
+                substitute = cursor.fetchone()
+                substitute_name = substitute['name'] if substitute else None
 
-            #გადაფარვის შემოწმება
+            # გადაფარვის შემოწმება
             cursor.execute("""
                         SELECT 1 FROM vacations 
                         WHERE employee_id = %s 
@@ -132,30 +142,35 @@ def add_vacation():
                 flash("შვებულება უკვე გაფორმებულია, ახალს ვერ დაამატებთ", "danger")
                 return redirect(url_for('vacations.vacations'))
 
-
-            #insert vacation
+            # insert vacation with substitute_id
             cursor.execute("""
                 insert into vacations
-                (employee_id, start_date, end_date)
-                values (%s, %s, %s)
-            """, (emp_id, s_date, e_date))
+                (employee_id, start_date, end_date, substitute_id)
+                values (%s, %s, %s, %s)
+            """, (emp_id, s_date, e_date, substitute_id if substitute_id else None))
 
-            affected_shifts = cursor.rowcount
+            vacation_id = cursor.lastrowid
 
-            #clear employee from shifts during vacation
+            # clear employee from shifts during vacation
             cursor.execute("""
                 update shifts set replacement_reason = 9 
                 where employee_id = %s
                 and shift_date between %s and %s
             """, (emp_id, s_date, e_date))
 
+            affected_shifts = cursor.rowcount
+
         db.commit()
 
         # Log successful vacation addition
+        log_message = f'Employee: {employee_name}, Period: {s_date} to {e_date}'
+        if substitute_name:
+            log_message += f', Substitute: {substitute_name}'
+        log_message += f', Affected shifts: {affected_shifts}'
+
         log_vacation(employee_name, s_date, e_date, action='ADDED')
-        log_auth_event('ADD_VACATION',
-                       f'Employee: {employee_name}, Period: {s_date} to {e_date}, Affected shifts: {affected_shifts}')
-        # flash ("შვებულება წარმატებით დაემატა", "success")
+        log_auth_event('ADD_VACATION', log_message)
+        flash("შვებულება წარმატებით დაემატა", "success")
 
 
     except Exception as e:
@@ -185,13 +200,13 @@ def delete_vacation(id):
                 return redirect(url_for('vacations.vacations'))
 
             # 2. ვამოწმებთ უფლებას
-            current_user_id = session['id']           # ← აქ არის შენი ID
+            current_user_id = session['id']  # ← აქ არის შენი ID
             is_admin = session.get('role') == 'admin'
             is_owner = vacation['employee_id'] == current_user_id
 
             if not (is_admin or is_owner):
                 log_auth_event('DELETE_VACATION_DENIED',
-                              f'Unauthorized attempt to delete vacation ID {id} for {vacation["employee_name"]}')
+                               f'Unauthorized attempt to delete vacation ID {id} for {vacation["employee_name"]}')
                 flash("თქვენ არ გაქვთ უფლება წაშალოთ ეს შვებულება", "danger")
                 return redirect(url_for('vacations.vacations'))
 

@@ -7,8 +7,6 @@ from datetime import datetime, timedelta
 import pytz
 from logger import log_shift_assignment, log_auth_event, log_action, log_daily_shifts
 
-
-
 app = Flask(__name__)
 app.secret_key = 'mariam123'
 
@@ -18,7 +16,6 @@ app.config['MYSQL_PASSWORD'] = 'qwe123'
 app.config['MYSQL_DB'] = 'silkflow_users'
 
 init_db(app)
-
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(vacations_bp)
@@ -33,13 +30,13 @@ ka_names = {
 }
 
 ka_weekdays = {
-    'Monday':    'ორშაბათი',
-    'Tuesday':   'სამშაბათი',
+    'Monday': 'ორშაბათი',
+    'Tuesday': 'სამშაბათი',
     'Wednesday': 'ოთხშაბათი',
-    'Thursday':  'ხუთშაბათი',
-    'Friday':    'პარასკევი',
-    'Saturday':  'შაბათი',
-    'Sunday':    'კვირა'
+    'Thursday': 'ხუთშაბათი',
+    'Friday': 'პარასკევი',
+    'Saturday': 'შაბათი',
+    'Sunday': 'კვირა'
 }
 
 
@@ -131,7 +128,6 @@ def add_class():
         return redirect(url_for('my_class'))
 
 
-
 @app.route('/delete_class/<int:id>', methods=['POST'])
 def delete_course(id):
     if 'loggedin' not in session:
@@ -150,7 +146,7 @@ def delete_course(id):
             # Log successful deletion
             log_auth_event('DELETE_CLASS', f'Class deleted: {course["course_name"]} (ID: {id})')
 
-        flash(f"კურსი „{course['course_name']}“ წაიშალა", "success")
+        flash(f"კურსი „{course['course_name']} წაიშალა", "success")
     except Exception as e:
         log_auth_event('DELETE_CLASS_ERROR', f'Error deleting class ID {id}: {str(e)}')
         flash(f"Error deleting class: {str(e)}", "danger")
@@ -165,6 +161,25 @@ def delete_course(id):
 
 
 def find_replacement(shift_date, excluded_emp_id, cursor):
+    """
+    ეძებს შემცვლელს - ჯერ ამოწმებს არის თუ არა substitute_id მითითებული
+    vacations ცხრილში, თუ არაა - ეძებს რენდომს
+    """
+    # ჯერ ვამოწმებთ არის თუ არა წინასწარ მითითებული შემცვლელი
+    cursor.execute("""
+        SELECT e.name
+        FROM vacations v
+        JOIN employees e ON v.substitute_id = e.id
+        WHERE v.employee_id = %s
+          AND %s BETWEEN v.start_date AND v.end_date
+          AND v.substitute_id IS NOT NULL
+    """, (excluded_emp_id, shift_date))
+
+    result = cursor.fetchone()
+    if result:
+        return result['name']
+
+    # თუ არ არის მითითებული, ვეძებთ რენდომს (ძველი ლოგიკა)
     query = """
             SELECT e.name
             FROM employees e
@@ -195,6 +210,7 @@ def find_replacement(shift_date, excluded_emp_id, cursor):
     cursor.execute(query, (shift_date, shift_date, excluded_emp_id, shift_date, shift_date, shift_date))
     result = cursor.fetchone()
     return result['name'] if result else None
+
 
 @app.route('/main')
 def main():
@@ -306,6 +322,7 @@ def main():
         flash(f"Error loading schedule: {str(e)}", "danger")
         print("Main error:", str(e))
         return render_template('main.html', shifts=[], email=session.get('email'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
