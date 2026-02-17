@@ -162,12 +162,15 @@ def delete_course(id):
 
 def find_replacement(shift_date, excluded_emp_id, cursor):
     """
-    ეძებს შემცვლელს - ჯერ ამოწმებს არის თუ არა substitute_id მითითებული
-    vacations ცხრილში, თუ არაა - ეძებს რენდომს
+    ეძებს შემცვლელს:
+    1. ჯერ ამოწმებს არის თუ არა substitute_id მითითებული vacations ცხრილში
+       - თუ substitute შვებულებაში არ არის -> ის ბრუნდება
+       - თუ substitute შვებულებაშია -> ეძებს სხვას ავტომატურად
+    2. თუ substitute არ არის მითითებული -> ეძებს ავტომატურად
     """
-    # ჯერ ვამოწმებთ არის თუ არა წინასწარ მითითებული შემცვლელი
+    # ვამოწმებთ არის თუ არა წინასწარ მითითებული შემცვლელი
     cursor.execute("""
-        SELECT e.name
+        SELECT e.id, e.name
         FROM vacations v
         JOIN employees e ON v.substitute_id = e.id
         WHERE v.employee_id = %s
@@ -175,11 +178,20 @@ def find_replacement(shift_date, excluded_emp_id, cursor):
           AND v.substitute_id IS NOT NULL
     """, (excluded_emp_id, shift_date))
 
-    result = cursor.fetchone()
-    if result:
-        return result['name']
+    substitute = cursor.fetchone()
+    if substitute:
+        # ვამოწმებთ ეს substitute თავად ხომ არ არის შვებულებაში
+        cursor.execute("""
+            SELECT 1 FROM vacations
+            WHERE employee_id = %s
+              AND %s BETWEEN start_date AND end_date
+        """, (substitute['id'], shift_date))
 
-    # თუ არ არის მითითებული, ვეძებთ რენდომს (ძველი ლოგიკა)
+        if not cursor.fetchone():
+            return substitute['name']
+        # substitute შვებულებაშია -> ვეძებთ სხვას ავტომატურად (ქვემოთ)
+
+    # ავტომატური ძებნა - გამოტოვება: შვებულებაში მყოფები ან substitute-ები
     query = """
             SELECT e.name
             FROM employees e
@@ -203,14 +215,19 @@ def find_replacement(shift_date, excluded_emp_id, cursor):
                     AND rs.shift_date BETWEEN DATE_SUB(%s, INTERVAL 30 DAY) AND DATE_SUB(%s, INTERVAL 1 DAY)
                     AND rs.replacement_reason IS NOT NULL
               )
+            AND NOT EXISTS (
+                  SELECT 1
+                  FROM vacations vac
+                  WHERE vac.employee_id = e.id
+                    AND %s BETWEEN vac.start_date AND vac.end_date
+              )
             GROUP BY e.id, e.name
             ORDER BY COUNT(s.id) ASC, e.name ASC
             LIMIT 1
         """
-    cursor.execute(query, (shift_date, shift_date, excluded_emp_id, shift_date, shift_date, shift_date))
+    cursor.execute(query, (shift_date, shift_date, excluded_emp_id, shift_date, shift_date, shift_date, shift_date))
     result = cursor.fetchone()
     return result['name'] if result else None
-
 
 @app.route('/main')
 def main():
