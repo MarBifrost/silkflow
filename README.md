@@ -1,7 +1,5 @@
 # silkflow
 
-# SilkFlow
-
 A Flask-based web application for managing employee vacation requests, with built-in authentication, logging, and an admin log viewer.
 
 ---
