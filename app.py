@@ -8,11 +8,11 @@ import pytz
 from logger import log_shift_assignment, log_auth_event, log_action, log_daily_shifts
 
 app = Flask(__name__)
-app.secret_key = 'mariam123'
+app.secret_key = '*********'
 
-app.config['MYSQL_HOST'] = '10.240.0.39'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'qwe123'
+app.config['MYSQL_HOST'] = '*************'
+app.config['MYSQL_USER'] = '******'
+app.config['MYSQL_PASSWORD'] = '**********'
 app.config['MYSQL_DB'] = 'silkflow_users'
 
 init_db(app)
